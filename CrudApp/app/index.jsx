@@ -71,7 +71,7 @@ export default function Index() {
                 ItemSeparatorComponent={seperatorComp}
                 ListEmptyComponent={<Text>No items found</Text>}
                 renderItem={({item}) => (
-                    <View style={styles.row}>
+                    <View style={[styles.row, Platform.OS === "web" && styles.rowWeb]}>
                         <View style={styles.itemRow}>
                             <Pressable onPress={() => handleCompleted(item)}>
                                 <Text
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
         borderColor: 'black',
         backgroundColor: 'rgba(221,218,218,0.6)',
         borderRadius: 5,
-        overflow: 'hidden',
+
         marginHorizontal: 'auto',
         shadowColor: "#000",
         shadowOffset: {
@@ -142,6 +142,10 @@ const styles = StyleSheet.create({
         },
         shadowOpacity: 0.25,
         shadowRadius: 8,
+        elevation: 8,
+    },
+    rowWeb: {
+        boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.25)",
     },
     itemRow: {
         width: '65%',
