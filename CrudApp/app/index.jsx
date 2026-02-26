@@ -1,14 +1,68 @@
 import {Text, View, StyleSheet, FlatList, Platform, ScrollView, Pressable, TextInput} from "react-native";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {data} from "@/data/todos";
-import React from "react";
+import { useState, useContext, useEffect } from "react";
 import AntDesign from '@expo/vector-icons/AntDesign';
+import { Roboto_300Light, useFonts } from "@expo-google-fonts/roboto";
+import Animated, { LinearTransition } from "react-native-reanimated";
+import { ThemeContext } from "@/context/ThemeContext";
+import Octicons from "@expo/vector-icons/Octicons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {StatusBar} from "expo-status-bar";
+
 
 export default function Index() {
-    const seperatorComp = <View style={styles.seperator}/>;
+    const { colorScheme, setColorScheme, theme } = useContext(ThemeContext);
+    const styles = createStyles(theme, colorScheme)
+    const separatorComp = <View style={styles.separator}/>;
     const Container = Platform.OS === 'web' ? ScrollView : SafeAreaView;
-    const [text, onChangeText] = React.useState('');
-    const [todos, setTodos] = React.useState(() => [...data].sort((a, b) => b.id - a.id));
+    const [text, onChangeText] = useState('');
+
+
+
+    // font import
+    const [loaded, error] = useFonts(
+        {
+            Roboto_300Light,
+        }
+    )
+    const [todos, setTodos] = useState([]);
+    // get items on load
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const jsonValue = await AsyncStorage.getItem("TodoApp")
+                const storageTodos = jsonValue != null ? JSON.parse(jsonValue) : null
+
+                if (storageTodos != null && storageTodos.length) {
+                    setTodos(storageTodos.sort((a,b) => b.id - a.id))
+                } else {
+                    setTodos(data.sort((a,b) => b.id - a.id))
+                }
+            }
+            catch (error) {
+                console.error(error);
+            }
+        }
+
+        fetchData()
+    }, [data])
+
+    // save data
+    useEffect(() => {
+        const storeData = async () => {
+            try {
+                const jsonValue = JSON.stringify(todos)
+                await AsyncStorage.setItem("TodoApp", jsonValue)
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        storeData()
+    }, [todos])
+
+
 
 
     const handleCompleted = (item) => {
@@ -54,22 +108,39 @@ export default function Index() {
         handleDelete(id);
     };
 
+    // Important to place this after hooks
+    if (!loaded && !error) {
+        return null
+    }
+
     return (
         <SafeAreaView style={styles.container}>
             <Text style={styles.headline}>TODO LIST</Text>
+            <Pressable
+                onPress={() =>
+                    setColorScheme(colorScheme === 'light'
+                    ? 'dark' : 'light')}>
+                {colorScheme === 'dark'
+                    ? <Octicons name="moon" size={36} width={36} color={theme.text} selectable={undefined}/>
+                    : <Octicons name="sun" size={36} width={36} color={theme.text} selectable={undefined}/>
+                }
+            </Pressable>
             <TextInput
                 style={styles.input}
                 onSubmitEditing={handleSubmit}
                 onChangeText={onChangeText}
                 value={text}
                 placeholder="Enter todo item here"
+                placeholderTextColor={theme.text}
             />
-            <FlatList
+            <Animated.FlatList
                 data={todos}
+                itemLayoutAnimation={LinearTransition}
+                keyboardDismissMode="on-drag"
                 keyExtractor={(item) => item.id.toString()}
                 showsHorizontalScrollIndicator={false}
-                ItemSeparatorComponent={seperatorComp}
-                ListEmptyComponent={<Text>No items found</Text>}
+                ItemSeparatorComponent={separatorComp}
+                ListEmptyComponent={<Text style={styles.itemText}>No items found</Text>}
                 renderItem={({item}) => (
                     <View style={styles.row}>
                         <View style={styles.itemRow}>
@@ -91,103 +162,110 @@ export default function Index() {
                         </Pressable>
                     </View>
                 )}>
-            </FlatList>
+            </Animated.FlatList>
+            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
         </SafeAreaView>
     )
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        flexDirection: 'column',
-        marginTop: 30,
-    },
-    headline: {
-        flexDirection: 'column',
-        backgroundColor: 'black',
-        fontWeight: 'bold',
-        fontSize: 26,
-        marginHorizontal: 'auto',
-        color: 'white',
-        width: '80%',
-        textAlign: 'center',
-        borderRadius: 5,
-        padding: 5
-    },
-    seperator: {
-        height: 2,
-        backgroundColor: 'rgba(50,30,13,0.5)',
-        width: '90%',
-        maxWidth: 310,
-        marginHorizontal: 'auto',
-        marginTop: 10,
-        marginBottom: 10,
-    },
-    row: {
-        flexDirection: 'row',
-        width: '80%',
-        maxWidth: 300,
-        height: 50,
-        borderWidth: 1,
-        borderStyle: 'solid',
-        borderColor: 'black',
-        backgroundColor: 'rgba(221,218,218,0.6)',
-        borderRadius: 5,
-        overflow: 'hidden',
-        marginHorizontal: 'auto',
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-    },
-    itemRow: {
-        width: '65%',
-        paddingTop: 10,
-        paddingLeft: 10,
-        paddingRight: 5,
-        flexGrow: 1,
-    },
-    itemText: {
-        fontSize: 18,
-    },
-    itemTextDone: {
-        textDecorationLine: 'line-through',
-        opacity: 0.3,
-    },
-    buttonText: {
-        fontSize: 16,
-        color: 'white',
-        fontWeight: 'bold',
-        textAlign: 'center',
-        fontFamily: 'JetBrains Mono',
+function createStyles(theme, colorScheme) {
+    return StyleSheet.create({
+        container: {
+            flex: 1,
+            flexDirection: 'column',
 
-    },
-    button: {
-        height: 35,
-        width: 40,
-        borderRadius: 5,
-        backgroundColor: 'rgba(177,0,0,0.63)',
-        padding: 6,
-        marginVertical: 'auto',
-        marginRight: 5,
-    },
-    input: {
-        height: 40,
-        margin: 12,
-        borderWidth: 1,
-        borderRadius: 5,
-        padding: 10,
-        fontSize: 18,
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 4,
+            backgroundColor: theme.background,
         },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-    },
-})
+        headline: {
+            flexDirection: 'column',
+            backgroundColor: theme.background,
+            fontWeight: 'bold',
+            fontSize: 26,
+            marginHorizontal: 'auto',
+            color: theme.text,
+            width: '80%',
+            textAlign: 'center',
+            borderRadius: 5,
+            padding: 5
+        },
+        separator: {
+            height: 2,
+            backgroundColor: theme.separator,
+            width: '90%',
+            maxWidth: 310,
+            marginHorizontal: 'auto',
+            marginTop: 10,
+            marginBottom: 10,
+        },
+        row: {
+            flexDirection: 'row',
+            width: '80%',
+            maxWidth: 300,
+            height: 50,
+            borderWidth: 1,
+            borderStyle: 'solid',
+            borderColor: 'black',
+            backgroundColor: 'rgba(221,218,218,0.6)',
+            borderRadius: 5,
+            overflow: 'hidden',
+            marginHorizontal: 'auto',
+            shadowColor: "#000",
+            shadowOffset: {
+                width: 0,
+                height: 4,
+            },
+            shadowOpacity: 0.25,
+            shadowRadius: 8,
+        },
+        itemRow: {
+            width: '65%',
+            paddingTop: 10,
+            paddingLeft: 10,
+            paddingRight: 5,
+            flexGrow: 1,
+        },
+        itemText: {
+            fontFamily: 'Roboto_300Light',
+            fontSize: 18,
+            color: theme.text,
+        },
+        itemTextDone: {
+            textDecorationLine: 'line-through',
+            opacity: 0.3,
+        },
+        buttonText: {
+            fontSize: 16,
+            color: colorScheme === 'dark' ? 'white' : 'black',
+            fontWeight: 'bold',
+            textAlign: 'center',
+        },
+        button: {
+            height: 35,
+            width: 40,
+            borderRadius: 5,
+            backgroundColor: theme.button,
+            padding: 6,
+            marginVertical: 'auto',
+            marginRight: 5,
+        },
+        input: {
+            fontFamily: 'Roboto_300Light',
+            color: theme.text,
+            borderColor: theme.text,
+            height: 40,
+            margin: 12,
+            borderWidth: 1,
+            borderRadius: 5,
+            padding: 10,
+            fontSize: 18,
+            shadowColor: "#000",
+            shadowOffset: {
+                width: 0,
+                height: 4,
+            },
+            shadowOpacity: 0.25,
+            shadowRadius: 8,
+        },
+    })
+}
 
