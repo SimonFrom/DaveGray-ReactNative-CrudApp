@@ -9,6 +9,7 @@ import { ThemeContext } from "@/context/ThemeContext";
 import Octicons from "@expo/vector-icons/Octicons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {StatusBar} from "expo-status-bar";
+import { useRouter } from "expo-router";
 
 
 export default function Index() {
@@ -17,6 +18,7 @@ export default function Index() {
     const separatorComp = <View style={styles.separator}/>;
     const Container = Platform.OS === 'web' ? ScrollView : SafeAreaView;
     const [text, onChangeText] = useState('');
+    const router = useRouter();
 
 
 
@@ -63,14 +65,9 @@ export default function Index() {
     }, [todos])
 
 
-
-
-    const handleCompleted = (item) => {
-        setTodos((prevTodos) => prevTodos.map((t) =>
-                t.id === item.id ? {...t, completed: !t.completed} : t
-            )
-        );
-    };
+    const handleCompleted = (id) => {
+        setTodos(todos.map(todo => todo.id === id ? {...todo, completed: !todo.completed } : todo))
+    }
 
     const addTodo = (text) => {
         setTodos((prevTodos) => {
@@ -94,7 +91,6 @@ export default function Index() {
         setTodos((prevTodos) => prevTodos.filter((t) => t.id !== id));
     }
 
-
     const handleSubmit = () => {
         if (!text.trim()) return;
 
@@ -107,6 +103,10 @@ export default function Index() {
         console.log(`Item ${id} was pressed`);
         handleDelete(id);
     };
+
+    const handleEdit = (id) => {
+        router.push(`/todos/${id}`)
+    }
 
     // Important to place this after hooks
     if (!loaded && !error) {
@@ -130,6 +130,8 @@ export default function Index() {
                 onSubmitEditing={handleSubmit}
                 onChangeText={onChangeText}
                 value={text}
+                // Limit character amount
+                // maxLength={30}
                 placeholder="Enter todo item here"
                 placeholderTextColor={theme.text}
             />
@@ -144,7 +146,9 @@ export default function Index() {
                 renderItem={({item}) => (
                     <View style={styles.row}>
                         <View style={styles.itemRow}>
-                            <Pressable onPress={() => handleCompleted(item)}>
+                            <Pressable
+                                onPress={() => handleEdit(item.id)}
+                                onLongPress={() => handleCompleted(item.id)}>
                                 <Text
                                     style={[
                                         styles.itemText,
@@ -201,7 +205,7 @@ function createStyles(theme, colorScheme) {
             flexDirection: 'row',
             width: '80%',
             maxWidth: 300,
-            height: 50,
+            height: "auto",
             borderWidth: 1,
             borderStyle: 'solid',
             borderColor: 'black',
@@ -220,6 +224,7 @@ function createStyles(theme, colorScheme) {
         itemRow: {
             width: '65%',
             paddingTop: 10,
+            paddingBottom: 10,
             paddingLeft: 10,
             paddingRight: 5,
             flexGrow: 1,

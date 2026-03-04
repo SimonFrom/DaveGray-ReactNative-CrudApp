@@ -5,6 +5,7 @@ export const Colors = {
         icon: 'black',
         button: 'royalblue',
         separator: 'black',
+        saveText: 'white',
     },
     dark: {
         text: 'white',
