@@ -23,7 +23,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.simonfrom.CrudApp"
     },
     "web": {
       "output": "static",
@@ -54,6 +55,7 @@
       "eas": {
         "projectId": "b5e26f95-8ddd-44c2-8993-988e2edb0102"
       }
-    }
+    },
+    "owner": "simonfrom"
   }
 }
